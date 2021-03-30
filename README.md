@@ -43,14 +43,20 @@ mkdir ./target/cargo-make
 
 # load the makefile from the cargo-make-tasks repository (in this example, cmake.toml)
 file = set cmake
-content = http_client --method GET https://raw.githubusercontent.com/sagiegurari/cargo-make-tasks/master/src/${file}.toml
-writefile ./target/cargo-make/${file}.toml ${content}
+file_path = set ./target/cargo-make/${file}.toml
+if not is_file ${file_path}
+  content = http_client --method GET https://raw.githubusercontent.com/sagiegurari/cargo-make-tasks/master/src/${file}.toml
+  writefile ${file_path} ${content}
+end
 
 # Optionally, load additional generic makefiles from cargo-make repository
 files = array git github toml
 for file in ${files}
-  content = http_client --method GET https://raw.githubusercontent.com/sagiegurari/cargo-make/master/src/lib/descriptor/makefiles/${file}.toml
-  writefile ./target/cargo-make/${file}.toml ${content}
+  file_path = set ./target/cargo-make/${file}.toml
+  if not is_file ${file_path}
+    content = http_client --method GET https://raw.githubusercontent.com/sagiegurari/cargo-make/master/src/lib/descriptor/makefiles/${file}.toml
+    writefile ${file_path} ${content}
+  end
 end
 release ${files}
 '''
