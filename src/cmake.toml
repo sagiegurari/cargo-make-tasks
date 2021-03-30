@@ -169,7 +169,6 @@ description = "Runs valgrind memory checks for the provided file."
 category = "Test"
 private = true
 condition = { env_set = ["CARGO_MAKE_VALGRIND_TEST_FILE"] }
-dependencies = ["make"]
 cwd = "${CARGO_MAKE_CMAKE_BINARY_DIRECTORY}"
 command = "valgrind"
 args = ["@@split(CARGO_MAKE_VALGRIND_ARGS, )", "./${CARGO_MAKE_VALGRIND_TEST_FILE}"]
