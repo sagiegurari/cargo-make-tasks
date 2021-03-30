@@ -143,7 +143,6 @@ category = "Test"
 [tasks.test-memory]
 description = "Runs memory tests."
 category = "Test"
-dependencies = ["make"]
 run_task = [
   { name = "valgrind-all-flow", condition = { env_true = ["CARGO_MAKE_CMAKE_USE_VALGRIND_MEMORY_TEST"] } },
   { name = "cmake-memcheck" },
@@ -154,12 +153,12 @@ description = "Runs memory tests if conditions are set."
 category = "Test"
 private = true
 condition = { env_true = ["CARGO_MAKE_CMAKE_RUN_MEMORY_CHECKS"] }
+dependencies = ["make"]
 run_task = "test-memory"
 
 [tasks.cmake-memcheck]
 description = "Runs memory tests."
 category = "Test"
-dependencies = ["make"]
 cwd = "${CARGO_MAKE_CMAKE_TARGET_DIRECTORY}"
 command = "ctest"
 args = ["-T", "memcheck"]
@@ -181,7 +180,6 @@ description = "Runs valgrind memory checks on all test files."
 category = "Test"
 private = true
 condition = { env_set = ["CARGO_MAKE_CMAKE_BINARY_DIRECTORY", "CARGO_MAKE_CMAKE_TEST_FILE_PATTERN"] }
-dependencies = ["make"]
 script = '''
 #!@duckscript
 files = glob_array ${CARGO_MAKE_CMAKE_BINARY_DIRECTORY}/${CARGO_MAKE_CMAKE_TEST_FILE_PATTERN}
