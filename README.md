@@ -19,7 +19,7 @@ However, this repository aims to provide additional tasks that can be used as is
 
 <a name="usage"></a>
 
-The following example does the following:
+The following example Makefile.toml does the following:
 
 * Pulls the cmake.toml from the cargo-make-tasks repository
 * Pulls several generic tomls from cargo-make repository (git, github and toml)
