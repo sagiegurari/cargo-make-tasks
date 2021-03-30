@@ -1,6 +1,6 @@
 ## CHANGELOG
 
-### v0.1.1
+### v0.1.1 (2021-03-30)
 
 * Ensure make is called only once for all valgrind tests and not for each file
 
