@@ -1,0 +1,223 @@
+
+[config]
+skip_core_tasks = true
+
+[tasks.setup-env]
+description = "Sets up environment variables."
+category = "Development"
+private = true
+env.CARGO_MAKE_CMAKE_TARGET_DIRECTORY = "${CARGO_MAKE_WORKING_DIRECTORY}/target"
+env.CARGO_MAKE_CMAKE_BINARY_DIRECTORY = "${CARGO_MAKE_CMAKE_TARGET_DIRECTORY}/bin"
+env.CARGO_MAKE_CMAKE_TEST_FILE_PATTERN = "test_*"
+env.CARGO_MAKE_CMAKE_TEST_BINARY_MODE = "Release"
+env.CARGO_MAKE_VALGRIND_ARGS_LOCAL = "--leak-check=yes --undef-value-errors=no --error-exitcode=1"
+env.CARGO_MAKE_VALGRIND_ARGS_CI = "--leak-check=full --show-leak-kinds=definite,indirect,possible --error-exitcode=1"
+env.CARGO_MAKE_VALGRIND_ARGS = { source = "${CARGO_MAKE_CI}", default_value = "${CARGO_MAKE_VALGRIND_ARGS_LOCAL}", mapping = { "true" = "${CARGO_MAKE_VALGRIND_ARGS_CI}" } }
+env.CARGO_MAKE_CMAKE_DELETE_CORE_FILES = true
+env.CARGO_MAKE_CMAKE_UNCRUSTIFY_COMMAND = "uncrustify"
+env.CARGO_MAKE_CMAKE_USE_VALGRIND_MEMORY_TEST = { value = false, condition = { env_not_set = "CARGO_MAKE_CMAKE_USE_VALGRIND_MEMORY_TEST" } }
+env.CARGO_MAKE_CMAKE_RUN_MEMORY_CHECKS = { source = "${CARGO_MAKE_CI}", default_value = "false", mapping = { "true" = "true" } }
+script = '''
+#!@duckscript
+args = split ${CARGO_MAKE_TASK_ARGS} " "
+
+for arg in ${args}
+    if not is_empty ${arg}
+        if eq "${arg}" --memcheck
+            set_env CARGO_MAKE_CMAKE_RUN_MEMORY_CHECKS true
+        end
+    end
+end
+
+release ${args}
+'''
+
+[tasks.default]
+clear = true
+description = "Default task points to the development testing flow"
+category = "Development"
+dependencies = [
+    "setup-env",
+    "format",
+    "build",
+    "test-flow"
+]
+
+[tasks.ci-flow]
+description = "CI task will run all steps."
+category = "CI"
+env = { CARGO_MAKE_CI = true }
+run_task = "ci-flow-post-env"
+
+[tasks.ci-flow-post-env]
+description = "CI task will run all steps."
+category = "CI"
+private = true
+dependencies = [
+    "setup-env",
+    "clean",
+    "format",
+    "build",
+    "test-flow"
+]
+
+[tasks.clean-target]
+description = "Cleanup the old build output and cmake generated scripts."
+category = "Development"
+private = true
+dependencies = ["setup-env"]
+script = '''
+#!@duckscript
+rm -Rf ${CARGO_MAKE_CMAKE_TARGET_DIRECTORY}
+'''
+
+[tasks.clean-core-files]
+description = "Deletes all core files."
+category = "Development"
+private = true
+condition = { env_true = ["CARGO_MAKE_CMAKE_DELETE_CORE_FILES"] }
+script = '''
+#!@duckscript
+rm ./core
+rm ./${CARGO_MAKE_CMAKE_BINARY_DIRECTORY}/core
+'''
+
+[tasks.clean-flow]
+description = "Cleanup the old build output and cmake generated scripts."
+category = "Development"
+dependencies = ["clean-target", "clean-core-files"]
+
+[tasks.clean]
+alias = "clean-flow"
+
+[tasks.prepare]
+description = "Sets up the target directory."
+category = "Development"
+private = true
+dependencies = ["setup-env"]
+script = '''
+#!@duckscript
+mkdir ${CARGO_MAKE_CMAKE_TARGET_DIRECTORY}
+'''
+
+[tasks.cmake]
+description = "Runs cmake to generate the make files."
+category = "Build"
+dependencies = ["prepare"]
+cwd = "${CARGO_MAKE_CMAKE_TARGET_DIRECTORY}"
+command = "cmake"
+args = [".."]
+
+[tasks.make]
+description = "Runs make to build the project."
+category = "Build"
+dependencies = ["cmake"]
+cwd = "${CARGO_MAKE_CMAKE_TARGET_DIRECTORY}"
+command = "make"
+
+[tasks.build]
+alias = "make"
+
+[tasks.format]
+description = "Runs uncrustify via make target."
+category = "Development"
+dependencies = ["cmake"]
+cwd = "${CARGO_MAKE_CMAKE_TARGET_DIRECTORY}"
+command = "make"
+args = ["uncrustify"]
+
+[tasks.pre-test]
+category = "Test"
+
+[tasks.test]
+description = "Runs tests."
+category = "Test"
+dependencies = ["make"]
+cwd = "${CARGO_MAKE_CMAKE_TARGET_DIRECTORY}"
+command = "ctest"
+args = ["-C", "${CARGO_MAKE_CMAKE_TEST_BINARY_MODE}", "--output-on-failure"]
+
+[tasks.post-test]
+category = "Test"
+
+[tasks.test-memory]
+description = "Runs memory tests."
+category = "Test"
+dependencies = ["make"]
+run_task = [
+  { name = "valgrind-all-flow", condition = { env_true = ["CARGO_MAKE_CMAKE_USE_VALGRIND_MEMORY_TEST"] } },
+  { name = "cmake-memcheck" },
+]
+
+[tasks.test-memory-conditioned]
+description = "Runs memory tests if conditions are set."
+category = "Test"
+private = true
+condition = { env_true = ["CARGO_MAKE_CMAKE_RUN_MEMORY_CHECKS"] }
+run_task = "test-memory"
+
+[tasks.cmake-memcheck]
+description = "Runs memory tests."
+category = "Test"
+dependencies = ["make"]
+cwd = "${CARGO_MAKE_CMAKE_TARGET_DIRECTORY}"
+command = "ctest"
+args = ["-T", "memcheck"]
+
+[tasks.valgrind-file]
+description = "Runs valgrind memory checks for the provided file."
+category = "Test"
+private = true
+condition = { env_set = ["CARGO_MAKE_VALGRIND_TEST_FILE"] }
+dependencies = ["make"]
+cwd = "${CARGO_MAKE_CMAKE_BINARY_DIRECTORY}"
+command = "valgrind"
+args = ["@@split(CARGO_MAKE_VALGRIND_ARGS, )", "./${CARGO_MAKE_VALGRIND_TEST_FILE}"]
+
+[tasks.pre-valgrind-all]
+category = "Test"
+
+[tasks.valgrind-all]
+description = "Runs valgrind memory checks on all test files."
+category = "Test"
+private = true
+condition = { env_set = ["CARGO_MAKE_CMAKE_BINARY_DIRECTORY", "CARGO_MAKE_CMAKE_TEST_FILE_PATTERN"] }
+dependencies = ["make"]
+script = '''
+#!@duckscript
+files = glob_array ${CARGO_MAKE_CMAKE_BINARY_DIRECTORY}/${CARGO_MAKE_CMAKE_TEST_FILE_PATTERN}
+
+for file in ${files}
+    echo -----------------------------------
+    file = basename ${file}
+    echo Running Valgrind For File: ${file}
+    set_env CARGO_MAKE_VALGRIND_TEST_FILE ${file}
+    cm_run_task valgrind-file
+    echo -----------------------------------
+end
+
+release ${files}
+'''
+
+[tasks.post-valgrind-all]
+category = "Test"
+
+[tasks.valgrind-all-flow]
+description = "Runs valgrind memory checks on all test files."
+category = "Test"
+dependencies = [
+    "pre-valgrind-all",
+    "valgrind-all",
+    "post-valgrind-all"
+]
+
+[tasks.test-flow]
+description = "Runs the entire test flow."
+category = "Test"
+dependencies = [
+    "pre-test",
+    "test",
+    "test-memory-conditioned",
+    "post-test"
+]
+
