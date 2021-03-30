@@ -33,6 +33,9 @@ release ${args}
 '''
 
 [tasks.default]
+alias = "dev"
+
+[tasks.dev]
 clear = true
 description = "Default task points to the development testing flow"
 category = "Development"

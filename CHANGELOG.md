@@ -3,6 +3,7 @@
 ### v0.1.2 (2021-03-30)
 
 * Improve performance by removing redundant make calls.
+* Add dev task to alias of default.
 
 ### v0.1.1 (2021-03-30)
 
