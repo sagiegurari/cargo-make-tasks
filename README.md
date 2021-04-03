@@ -29,6 +29,7 @@ The following example Makefile.toml does the following:
 # Include the requested makefile (in this example, cmake.toml) and optionally also
 # other generic makefiles from cargo-make directly.
 extend = [
+  { path = "./target/cargo-make/build-file.toml" },
   { path = "./target/cargo-make/git.toml" },
   { path = "./target/cargo-make/github.toml" },
   { path = "./target/cargo-make/toml.toml" },
