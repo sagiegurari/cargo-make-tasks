@@ -51,7 +51,7 @@ if not is_file ${file_path}
 end
 
 # Optionally, load additional generic makefiles from cargo-make repository
-files = array git github toml
+files = array build-file git github toml
 for file in ${files}
   file_path = set ./target/cargo-make/${file}.toml
   if not is_file ${file_path}
