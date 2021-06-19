@@ -1,0 +1,98 @@
+[config]
+skip_core_tasks = true
+
+
+[env.development]
+BUILDDIR = "./target/debug"
+
+[env.production]
+BUILDDIR = "./target/release"
+
+
+[tasks.default]
+alias = "build"
+
+
+[tasks.setup-development]
+private = true
+condition = { files_not_exist = ["${BUILDDIR}/build.ninja"], profiles = ["development"] }
+command = "meson"
+args = ["setup", "-Db_coverage=true", "${BUILDDIR}"]
+
+[tasks.setup-production]
+private = true
+condition = { files_not_exist = ["${BUILDDIR}/build.ninja"], profiles = ["production"] }
+command = "meson"
+args = ["setup", "--buildtype=release", "-Db_coverage=true", "${BUILDDIR}"]
+
+[tasks.setup]
+private = true
+dependencies = ["clean_gcda"]
+run_task = { name = ["setup-development", "setup-production"], parallel = true }
+
+
+[tasks.build]
+dependencies = ["setup"]
+command = "meson"
+args = ["compile", "-C", "${BUILDDIR}", "${@}"]
+
+[tasks.test]
+dependencies = ["setup"]
+command = "meson"
+args = ["test", "-C", "${BUILDDIR}", "-v", "${@}"]
+
+[tasks.bench]
+dependencies = ["setup"]
+command = "meson"
+args = ["test", "-C", "${BUILDDIR}", "--benchmark", "-v", "${@}"]
+
+
+[tasks.linter]
+dependencies = ["build"]
+command = "ninja"
+args = ["-C", "${BUILDDIR}", "clang-tidy"]
+
+
+[tasks.scan-build]
+dependencies = ["build"]
+command = "ninja"
+args = ["-C", "${BUILDDIR}", "scan-build"]
+
+[tasks.scan-view]
+command = "scan-view"
+args = ["--allow-all-hosts", "--host", "0.0.0.0", "${@}"]
+
+
+[tasks.coverage]
+dependencies = ["test"]
+command = "ninja"
+args = ["-C", "${BUILDDIR}", "coverage-html"]
+
+
+[tasks.deps]
+dependencies = ["setup"]
+script_runner = "@duckscript"
+script = '''
+output = exec ninja -C ${BUILDDIR} -t graph
+writefile ./target/deps.dot ${output.stdout}
+'''
+
+[tasks.reconfigure]
+dependencies = ["setup"]
+command = "meson"
+args = ["setup", "--reconfigure", "${BUILDDIR}", "${@}"]
+
+[tasks.install]
+dependencies = ["setup"]
+command = "meson"
+args = ["install", "-C", "${BUILDDIR}", "${@}"]
+
+[tasks.clean_gcda]
+script_runner = "@duckscript"
+script = '''
+build_dir = canonicalize ${BUILDDIR}
+gcda_files = glob_array ${build_dir}/**/*.gcda
+for path in ${gcda_files}
+  rm ${path}
+end
+'''
