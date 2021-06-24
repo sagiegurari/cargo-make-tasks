@@ -15,7 +15,7 @@ alias = "build"
 
 [tasks.setup]
 private = true
-dependencies = ["clean-gcda"]
+dependencies = ["install-meson", "clean-gcda"]
 condition = { files_not_exist = ["${CARGO_MAKE_MESON_BUILDDIR}/build.ninja"] }
 command = "meson"
 args = ["setup", "--buildtype=${CARGO_MAKE_MESON_BUILDTYPE}", "@@split(CARGO_MAKE_MESON_ARGS, )", "${CARGO_MAKE_MESON_BUILDDIR}"]
@@ -59,10 +59,6 @@ dependencies = ["setup"]
 script_runner = "@duckscript"
 script = '''
 output = exec --fail-on-error ninja -C ${CARGO_MAKE_MESON_BUILDDIR} -t graph
-if not eq ${output.code} "0"
-  echo ${output.stderr}
-  exit ${output.code}
-end
 writefile ./target/deps.dot ${output.stdout}
 '''
 
