@@ -1,0 +1,16 @@
+
+[config]
+skip_core_tasks = true
+
+[tasks.ci]
+category = "CI"
+description = "Runs CI flow"
+script = '''
+#!@duckscript
+files = glob_array ./src/*.toml
+for file in ${files}
+  exec --fail-on-error cargo make --list-all-steps --makefile ${file}
+end
+release ${files}
+'''
+

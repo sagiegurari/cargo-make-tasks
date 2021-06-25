@@ -3,6 +3,7 @@
 ### v0.1.3
 
 * Add new mason toml #1 (thanks @TiceCosmos)
+* New CI flow
 
 ### v0.1.2 (2021-03-30)
 

@@ -14,6 +14,8 @@ CARGO_MAKE_MESON_BUILDTYPE = "release"
 alias = "build"
 
 [tasks.setup]
+description = "Setups mason and project dependencies."
+category = "Development"
 private = true
 dependencies = ["install-meson", "clean-gcda"]
 condition = { files_not_exist = ["${CARGO_MAKE_MESON_BUILDDIR}/build.ninja"] }
@@ -21,40 +23,56 @@ command = "meson"
 args = ["setup", "--buildtype=${CARGO_MAKE_MESON_BUILDTYPE}", "@@split(CARGO_MAKE_MESON_ARGS, )", "${CARGO_MAKE_MESON_BUILDDIR}"]
 
 [tasks.build]
+description = "Runs mason compile to build the project."
+category = "Build"
 dependencies = ["setup"]
 command = "meson"
 args = ["compile", "-C", "${CARGO_MAKE_MESON_BUILDDIR}", "${@}"]
 
 [tasks.test]
+description = "Runs tests."
+category = "Test"
 dependencies = ["setup"]
 command = "meson"
 args = ["test", "-C", "${CARGO_MAKE_MESON_BUILDDIR}", "-v", "${@}"]
 
 [tasks.bench]
+description = "Runs benchmark tests."
+category = "Test"
 dependencies = ["setup"]
 command = "meson"
 args = ["test", "-C", "${CARGO_MAKE_MESON_BUILDDIR}", "--benchmark", "-v", "${@}"]
 
 [tasks.linter]
+description = "Runs linter."
+category = "Test"
 dependencies = ["build"]
 command = "ninja"
 args = ["-C", "${CARGO_MAKE_MESON_BUILDDIR}", "clang-tidy"]
 
 [tasks.scan-build]
+description = "Runs ninja scan-build command."
+category = "Build"
 dependencies = ["build"]
 command = "ninja"
 args = ["-C", "${CARGO_MAKE_MESON_BUILDDIR}", "scan-build"]
 
 [tasks.scan-view]
+description = "Runs scan-view command."
+category = "Build"
 command = "scan-view"
 args = ["--allow-all-hosts", "--host", "0.0.0.0", "${@}"]
 
 [tasks.coverage]
+description = "Generates coverage report."
+category = "Test"
 dependencies = ["test"]
 command = "ninja"
 args = ["-C", "${CARGO_MAKE_MESON_BUILDDIR}", "coverage-html"]
 
 [tasks.deps]
+description = "Creates dependencies graph file."
+category = "Development"
 dependencies = ["setup"]
 script_runner = "@duckscript"
 script = '''
@@ -63,18 +81,25 @@ writefile ./target/deps.dot ${output.stdout}
 '''
 
 [tasks.reconfigure]
+description = "Runs meson reconfigure."
+category = "Development"
 dependencies = ["setup"]
 command = "meson"
 args = ["setup", "--reconfigure", "${CARGO_MAKE_MESON_BUILDDIR}", "${@}"]
 
 [tasks.install]
+description = "Runs meson install."
+category = "Development"
 dependencies = ["setup"]
 command = "meson"
 args = ["install", "-C", "${CARGO_MAKE_MESON_BUILDDIR}", "${@}"]
 
 [tasks.clean-gcda]
-script_runner = "@duckscript"
+description = "Deletes all gcda files."
+category = "Development"
 script = '''
+#!@duckscript
+
 build_dir = canonicalize ${CARGO_MAKE_MESON_BUILDDIR}
 gcda_files = glob_array ${build_dir}/**/*.gcda
 for path in ${gcda_files}
@@ -83,8 +108,11 @@ end
 '''
 
 [tasks.install-meson]
-script_runner = "@duckscript"
+description = "Installs meson."
+category = "Development"
 install_script = '''
+#!@duckscript
+
 mesonpath = which meson
 if is_empty ${mesonpath}
   pip3 install meson
