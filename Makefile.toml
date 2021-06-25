@@ -2,6 +2,9 @@
 [config]
 skip_core_tasks = true
 
+[tasks.default]
+alias = "ci"
+
 [tasks.ci]
 category = "CI"
 description = "Runs CI flow"
