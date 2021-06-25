@@ -1,6 +1,6 @@
 ## CHANGELOG
 
-### v0.1.3
+### v0.1.3 (2021-06-25)
 
 * Add new mason toml #1 (thanks @TiceCosmos)
 * New CI flow
