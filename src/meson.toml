@@ -1,0 +1,92 @@
+[config]
+skip_core_tasks = true
+
+[env]
+CARGO_MAKE_MESON_BUILDDIR = "./target/debug"
+CARGO_MAKE_MESON_BUILDTYPE = "debug"
+CARGO_MAKE_MESON_ARGS = "-Db_coverage=true"
+
+[env.production]
+CARGO_MAKE_MESON_BUILDDIR = "./target/release"
+CARGO_MAKE_MESON_BUILDTYPE = "release"
+
+[tasks.default]
+alias = "build"
+
+[tasks.setup]
+private = true
+dependencies = ["install-meson", "clean-gcda"]
+condition = { files_not_exist = ["${CARGO_MAKE_MESON_BUILDDIR}/build.ninja"] }
+command = "meson"
+args = ["setup", "--buildtype=${CARGO_MAKE_MESON_BUILDTYPE}", "@@split(CARGO_MAKE_MESON_ARGS, )", "${CARGO_MAKE_MESON_BUILDDIR}"]
+
+[tasks.build]
+dependencies = ["setup"]
+command = "meson"
+args = ["compile", "-C", "${CARGO_MAKE_MESON_BUILDDIR}", "${@}"]
+
+[tasks.test]
+dependencies = ["setup"]
+command = "meson"
+args = ["test", "-C", "${CARGO_MAKE_MESON_BUILDDIR}", "-v", "${@}"]
+
+[tasks.bench]
+dependencies = ["setup"]
+command = "meson"
+args = ["test", "-C", "${CARGO_MAKE_MESON_BUILDDIR}", "--benchmark", "-v", "${@}"]
+
+[tasks.linter]
+dependencies = ["build"]
+command = "ninja"
+args = ["-C", "${CARGO_MAKE_MESON_BUILDDIR}", "clang-tidy"]
+
+[tasks.scan-build]
+dependencies = ["build"]
+command = "ninja"
+args = ["-C", "${CARGO_MAKE_MESON_BUILDDIR}", "scan-build"]
+
+[tasks.scan-view]
+command = "scan-view"
+args = ["--allow-all-hosts", "--host", "0.0.0.0", "${@}"]
+
+[tasks.coverage]
+dependencies = ["test"]
+command = "ninja"
+args = ["-C", "${CARGO_MAKE_MESON_BUILDDIR}", "coverage-html"]
+
+[tasks.deps]
+dependencies = ["setup"]
+script_runner = "@duckscript"
+script = '''
+output = exec --fail-on-error ninja -C ${CARGO_MAKE_MESON_BUILDDIR} -t graph
+writefile ./target/deps.dot ${output.stdout}
+'''
+
+[tasks.reconfigure]
+dependencies = ["setup"]
+command = "meson"
+args = ["setup", "--reconfigure", "${CARGO_MAKE_MESON_BUILDDIR}", "${@}"]
+
+[tasks.install]
+dependencies = ["setup"]
+command = "meson"
+args = ["install", "-C", "${CARGO_MAKE_MESON_BUILDDIR}", "${@}"]
+
+[tasks.clean-gcda]
+script_runner = "@duckscript"
+script = '''
+build_dir = canonicalize ${CARGO_MAKE_MESON_BUILDDIR}
+gcda_files = glob_array ${build_dir}/**/*.gcda
+for path in ${gcda_files}
+  rm ${path}
+end
+'''
+
+[tasks.install-meson]
+script_runner = "@duckscript"
+install_script = '''
+mesonpath = which meson
+if is_empty ${mesonpath}
+  pip3 install meson
+end
+'''
