@@ -146,6 +146,7 @@ category = "Test"
 [tasks.test-memory]
 description = "Runs memory tests."
 category = "Test"
+dependencies = ["setup-env"]
 run_task = [
   { name = "valgrind-all-flow", condition = { env_true = ["CARGO_MAKE_CMAKE_USE_VALGRIND_MEMORY_TEST"] } },
   { name = "cmake-memcheck" },
@@ -162,6 +163,7 @@ run_task = "test-memory"
 [tasks.cmake-memcheck]
 description = "Runs memory tests."
 category = "Test"
+dependencies = ["cmake"]
 cwd = "${CARGO_MAKE_CMAKE_TARGET_DIRECTORY}"
 command = "ctest"
 args = ["-T", "memcheck"]
@@ -206,6 +208,7 @@ category = "Test"
 description = "Runs valgrind memory checks on all test files."
 category = "Test"
 dependencies = [
+    "prepare",
     "pre-valgrind-all",
     "valgrind-all",
     "post-valgrind-all"
@@ -215,6 +218,7 @@ dependencies = [
 description = "Runs the entire test flow."
 category = "Test"
 dependencies = [
+    "prepare",
     "pre-test",
     "test",
     "test-memory-conditioned",

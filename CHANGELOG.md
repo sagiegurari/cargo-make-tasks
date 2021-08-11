@@ -1,5 +1,9 @@
 ## CHANGELOG
 
+### v0.1.4 (2021-08-11)
+
+* Ensure to setup env before running any task in cmake.toml
+
 ### v0.1.3 (2021-06-25)
 
 * Add new mason toml #1 (thanks @TiceCosmos)
