@@ -1,5 +1,8 @@
+
 [config]
 skip_core_tasks = true
+skip_rust_env_info = true
+skip_crate_env_info = true
 
 [env]
 CARGO_MAKE_MESON_BUILDDIR = "./target/debug"

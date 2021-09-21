@@ -1,5 +1,9 @@
 ## CHANGELOG
 
+### v0.1.5 (2021-09-21)
+
+* Performance - skip rust specific cargo-make steps from being invoked
+
 ### v0.1.4 (2021-08-11)
 
 * Ensure to setup env before running any task in cmake.toml
